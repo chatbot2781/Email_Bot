@@ -1,0 +1,22 @@
+
+# Ignore everything by default
+*
+
+# Allow the app folder and ALL its files (including nested)
+!app/
+!app/**
+
+# Allow essentials
+!wsgi.py
+!requirements.txt
+!.gitignore
+
+# Always ignore secrets
+.env
+credentials.json
+
+# Optional: ignore heavy artifacts
+model/
+*.faiss
+*.pkl
+*.safetensors

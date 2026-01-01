@@ -1,0 +1,137 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Email Bot</title>
+    <style>
+      :root {
+        --card-bg: #ffffff;
+        --card-border: #e5e7eb;
+        --box-bg: #f9fafb;
+        --box-border: #e5e7eb;
+        --text-muted: #6b7280;
+      }
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      header { display: flex; align-items: center; gap: 10px; }
+      h3 { margin: 0; }
+      #status { margin-left: auto; color: var(--text-muted); }
+      .controls { margin-top: 10px; display: flex; gap: 10px; }
+
+      button.btn, a.btn {
+        padding: 8px 14px; background: #2563eb; color: #fff; border: none;
+        border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block;
+      }
+      button.btn:hover, a.btn:hover { background: #1d4ed8; }
+      button.btn:disabled { opacity: 0.6; cursor: default; }
+
+      .results { margin-top: 16px; display: grid; gap: 16px; }
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      }
+      .subject { font-weight: bold; margin-bottom: 10px; }
+      .box {
+        background: var(--box-bg);
+        border: 1px solid var(--box-border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        white-space: pre-wrap;
+        line-height: 1.4;
+      }
+      .box:last-child { margin-bottom: 0; }
+      .box-title {
+        font-size: 12px; color: var(--text-muted); margin-bottom: 6px;
+        text-transform: uppercase; letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h3>Email Bot</h3>
+      <div id="status">Checking unread mails...</div>
+    </header>
+
+    <div class="controls">
+      <button id="btnRefresh" class="btn">Refresh Inbox</button>
+      <a
+        class="btn"
+        href="https://dev202768.service-now.com/now/nav/ui/classic/params/target/incident_list.do%3Fsysparm_userpref_module%3D4fed4395c0a8016400fcf06c27b1e6c6%26sysparm_query%3Dactive%253Dtrue%255EEQ%26active%3Dtrue%26sysparm_clear_stack%3Dtrue"
+        target="_blank">View Incidents
+        </a>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+      const btnRefresh = document.getElementById('btnRefresh');
+      let pollInProgress = false;
+
+      async function checkUnread() {
+        if (pollInProgress) return;
+        pollInProgress = true;
+        try {
+          btnRefresh.disabled = true;
+          statusEl.textContent = 'Checking unread mails...';
+          resultsEl.innerHTML = '';
+          const resp = await fetch('/unread');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const data = await resp.json();
+          const items = (data && data.result) ? data.result : [];
+          if (!items.length) { statusEl.textContent = 'No new mails.'; return; }
+          statusEl.textContent = '';
+          for (const it of items) {
+            const subject = it.subject || '(No Subject)';
+            const body = it.body || '';
+            const response = it.response_mail || '';
+            const card = document.createElement('div');
+            card.className = 'card';
+            const subjEl = document.createElement('div');
+            subjEl.className = 'subject';
+            subjEl.textContent = `Subject: ${subject}`;
+            card.appendChild(subjEl);
+            const bodyBox = document.createElement('div');
+            bodyBox.className = 'box';
+            bodyBox.innerHTML = `<div class="box-title"><b style="color:blue">Received Email Body</b></div>${escapeHtml(body)}`;
+            card.appendChild(bodyBox);
+            const respBox = document.createElement('div');
+            respBox.className = 'box';
+            respBox.innerHTML = `<div class="box-title"><b style="color:blue">Response Email</b></div>${escapeHtml(response)}`;
+            card.appendChild(respBox);
+            resultsEl.appendChild(card);
+          }
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = 'Error: ' + err.message;
+        } finally {
+          btnRefresh.disabled = false;
+          pollInProgress = false;
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        checkUnread();
+        setInterval(checkUnread, 30000);
+      });
+
+      btnRefresh.addEventListener('click', checkUnread);
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;')
+          .replace(/\n/g, '<br/>');
+      }
+    </script>
+  </body>
+</html>

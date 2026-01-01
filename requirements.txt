@@ -1,0 +1,7 @@
+Flask==2.1.1
+google-auth==2.7.0
+google-auth-oauthlib==0.4.6
+google-api-python-client==2.47.0
+sentence-transformers==2.2.0
+faiss-cpu==1.7.1
+pandas==1.4.2
